@@ -21,7 +21,7 @@
 
 <p align="center">
     A lightweight, customizable toast notification library for SwiftUI applications, 
-    designed to provide elegant and user-friendly notifications with minimal setup.
+    designed to provide elegant and user-friendly toast with minimal setup.
 </p>
 
 <p align="center">
