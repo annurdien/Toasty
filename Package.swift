@@ -7,7 +7,7 @@ let package = Package(
     name: "Toasty",
     platforms: [
         .iOS(.v15),
-        .macOS(.v10_15),
+        .macOS(.v12),
     ],
     products: [
         .library(
