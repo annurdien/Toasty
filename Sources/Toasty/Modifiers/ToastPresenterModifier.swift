@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A view modifier that observes a `ToastManager` and presents a `ToastView`
-/// when a toast is available. (Consider making this `internal` if not needed publicly)
-struct ToastPresenterModifier: ViewModifier {
+/// when a toast is available.
+internal struct ToastPresenterModifier: ViewModifier {
     /// Use @ObservedObject for modifiers if the object is created outside.
     /// If the modifier *creates* the object, use @StateObject.
     /// Here, the object is created by the .toastable() extension and passed in.
@@ -23,7 +23,6 @@ struct ToastPresenterModifier: ViewModifier {
                     GeometryReader { geometry in
                         // Use optional binding to safely unwrap the toast
                         if let currentToast = toastManager.currentToast {
-                            // Ensure ToastView is accessible (it's likely internal or public)
                             ToastView(toast: currentToast)
                                 .transition(toastTransition(for: alignment))  // Apply transition
                                 .offset(
