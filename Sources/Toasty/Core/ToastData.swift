@@ -27,6 +27,15 @@ public enum ToastType {
     var foregroundColor: Color {
         return Color.white
     }
+    
+    var accessibilityLabel: String {
+        switch self {
+        case .info: return "Information"
+        case .success: return "Success"
+        case .warning: return "Warning"
+        case .error: return "Error"
+        }
+    }
 }
 
 public struct ToastData: Equatable {
@@ -38,7 +47,8 @@ public struct ToastData: Equatable {
     public init(message: String, type: ToastType = .info, duration: TimeInterval = 3.0) {
         self.message = message
         self.type = type
-        self.duration = duration
+        // Ensure duration is within reasonable bounds
+        self.duration = max(0.5, min(duration, 10.0))
     }
 
     public static func == (lhs: ToastData, rhs: ToastData) -> Bool {

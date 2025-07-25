@@ -3,29 +3,38 @@ import SwiftUI
 /// The visual representation of a toast message.
 struct ToastView: View {
     let toast: ToastData
+    @Environment(\.toastConfiguration) private var configuration
 
     var body: some View {
         HStack(spacing: 10) {
             // Icon
             Image(systemName: toast.type.systemImageName)
                 .foregroundColor(toast.type.foregroundColor)
-                .font(.system(size: 20, weight: .semibold))  // Slightly larger icon
+                .font(configuration.iconFont)
 
             // Message Text
             Text(toast.message)
-                .font(.system(size: 14, weight: .medium))  // Clear font size
+                .font(configuration.messageFont)
                 .foregroundColor(toast.type.foregroundColor)
-                .lineLimit(3)  // Allow up to 3 lines for longer messages
+                .lineLimit(configuration.maxLines)
                 .multilineTextAlignment(.leading)  // Align text to the leading edge
 
             Spacer()  // Push content to the left
         }
-        .padding(.vertical, 12)  // More vertical padding
-        .padding(.horizontal, 16)  // Standard horizontal padding
+        .padding(.vertical, configuration.verticalPadding)
+        .padding(.horizontal, configuration.horizontalPadding)
         .background(toast.type.backgroundColor)
-        .cornerRadius(10)  // Rounded corners
-        .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 2)  // Subtle shadow
-        .padding(.horizontal)  // Add padding around the toast itself
+        .cornerRadius(configuration.cornerRadius)
+        .shadow(
+            color: configuration.shadowColor, 
+            radius: configuration.shadowRadius, 
+            x: configuration.shadowOffset.width, 
+            y: configuration.shadowOffset.height
+        )
+        .padding(.horizontal, configuration.outerHorizontalPadding)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(toast.type.accessibilityLabel): \(toast.message)")
+        .accessibilityAddTraits(.isButton) // Indicate it's interactive
     }
 }
 

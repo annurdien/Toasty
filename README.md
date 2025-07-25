@@ -35,9 +35,13 @@
 - ⚡️ Smooth animations and transitions
 - 🔄 Auto-dismissal with customizable duration
 - 👆 Tap to dismiss
-- ♿️ Accessibility support
+- ♿️ Enhanced accessibility support with VoiceOver announcements
 - 📱 Safe area aware
 - 🎭 Flexible positioning (top, bottom)
+- 🛡️ Race condition protection for rapid toast calls
+- ✅ Input validation for empty messages and invalid durations
+- 🎨 Customizable appearance through configuration
+- 🧪 Comprehensive test coverage
 
 ## 📦 Installation
 
@@ -112,12 +116,67 @@ struct ContentView: View {
 
 ### Customization
 
+#### Position
 Adjust toast position using the alignment parameter:
 
 ```swift
 ContentView()
     .toastable(alignment: .bottom) // Show toasts at the bottom
 ```
+
+#### Appearance
+Customize toast appearance using `ToastConfiguration`:
+
+```swift
+import Toasty
+
+// Create custom configuration
+var customConfig = ToastConfiguration()
+customConfig.cornerRadius = 15
+customConfig.shadowRadius = 8
+customConfig.messageFont = .title3
+customConfig.maxLines = 5
+
+// Apply to your view
+ContentView()
+    .toastable()
+    .toastConfiguration(customConfig)
+```
+
+### Advanced Usage
+
+#### Check Toast State
+```swift
+@Toast private var toast
+
+var body: some View {
+    VStack {
+        if toast.isShowingToast {
+            Button("Dismiss Current Toast") {
+                toast.dismiss()
+            }
+        }
+        
+        Button("Show Toast") {
+            toast.show(message: "Hello!")
+        }
+    }
+}
+```
+
+#### Input Validation
+The library automatically validates inputs:
+- Empty or whitespace-only messages are ignored
+- Duration is clamped between 0.5 and 10.0 seconds
+- Race conditions are handled automatically
+
+### Accessibility
+
+Toasty includes comprehensive accessibility support:
+- VoiceOver announcements when toasts appear
+- Proper accessibility labels and traits
+- Voice Control support with "Dismiss" action
+- Screen Reader optimized content structure
 
 ## ⚙️ Requirements
 
