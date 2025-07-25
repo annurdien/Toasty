@@ -1,25 +1,22 @@
 import SwiftUI
 
-/// The visual representation of a toast message.
 struct ToastView: View {
     let toast: ToastData
     @Environment(\.toastConfiguration) private var configuration
 
     var body: some View {
         HStack(spacing: 10) {
-            // Icon
             Image(systemName: toast.type.systemImageName)
                 .foregroundColor(toast.type.foregroundColor)
                 .font(configuration.iconFont)
 
-            // Message Text
             Text(toast.message)
                 .font(configuration.messageFont)
                 .foregroundColor(toast.type.foregroundColor)
                 .lineLimit(configuration.maxLines)
-                .multilineTextAlignment(.leading)  // Align text to the leading edge
+                .multilineTextAlignment(.leading)
 
-            Spacer()  // Push content to the left
+            Spacer()
         }
         .padding(.vertical, configuration.verticalPadding)
         .padding(.horizontal, configuration.horizontalPadding)
@@ -34,11 +31,10 @@ struct ToastView: View {
         .padding(.horizontal, configuration.outerHorizontalPadding)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(toast.type.accessibilityLabel): \(toast.message)")
-        .accessibilityAddTraits(.isButton) // Indicate it's interactive
+        .accessibilityAddTraits(.isButton)
     }
 }
 
-// Optional: Preview for ToastView
 struct ToastView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
@@ -53,6 +49,6 @@ struct ToastView_Previews: PreviewProvider {
                     type: .error))
         }
         .padding()
-        .previewLayout(.sizeThatFits)  // Adjust preview layout
+        .previewLayout(.sizeThatFits)
     }
 }

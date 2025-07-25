@@ -47,7 +47,6 @@ public struct ToastData: Equatable {
     public init(message: String, type: ToastType = .info, duration: TimeInterval = 3.0) {
         self.message = message
         self.type = type
-        // Ensure duration is within reasonable bounds
         self.duration = max(0.5, min(duration, 10.0))
     }
 
