@@ -110,4 +110,31 @@ struct ToastyTests {
         #expect(manager.currentToast?.message == "Second")
         #expect(firstToastId != secondToastId)
     }
+    
+    @Test func toastPresenterModifierAlignment() async throws {
+        // Test that all alignment cases are handled without crashing
+        let alignments: [Alignment] = [
+            .top, .topLeading, .topTrailing,
+            .center, .leading, .trailing,
+            .bottom, .bottomLeading, .bottomTrailing
+        ]
+        
+        for alignment in alignments {
+            let modifier = ToastPresenterModifier(toastManager: ToastManager(), alignment: alignment)
+            
+            // Test that transition calculation doesn't crash
+            let transition = modifier.toastTransition(for: alignment)
+            // Just verify we can call the method without crashing
+            _ = transition
+            
+            // Test that offset calculation doesn't crash
+            let safeArea = EdgeInsets(top: 44, leading: 0, bottom: 34, trailing: 0)
+            let verticalOffset = modifier.calculateVerticalOffset(for: alignment, in: safeArea)
+            let horizontalOffset = modifier.calculateHorizontalOffset(for: alignment)
+            
+            // Verify offsets are reasonable
+            #expect(abs(verticalOffset) <= 100) // Should be reasonable offset
+            #expect(abs(horizontalOffset) <= 100) // Should be reasonable offset
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import SwiftUI
+ import SwiftUI
 
 #if canImport(UIKit)
 import UIKit
@@ -22,76 +22,84 @@ internal struct ToastPresenterModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(
-                // Only create the ZStack and ToastView if there's a toast to show
-                ZStack(alignment: alignment) {
-                    // GeometryReader helps position correctly within the overlay
-                    GeometryReader { geometry in
-                        // Use optional binding to safely unwrap the toast
-                        if let currentToast = toastManager.currentToast {
-                            ToastView(toast: currentToast)
-                                .transition(toastTransition(for: alignment))  // Apply transition
-                                .offset(
-                                    y: calculateOffset(for: alignment, in: geometry.safeAreaInsets)
-                                )  // Adjust position based on safe area
-                                .zIndex(1)  // Ensure toast is on top
-                                .id(currentToast.id)  // Use ID for explicit animation identity
-                                .onTapGesture {  // Allow tapping to dismiss
-                                    // Ensure dismissal happens on the main thread via the manager's method
-                                    toastManager.dismiss()
-                                }
-                                .accessibilityElement(children: .combine)
-                                .accessibilityLabel("Toast notification: \(currentToast.message)")
-                                .accessibilityHint("Double tap to dismiss")
-                                .accessibilityAction(named: "Dismiss") {
-                                    toastManager.dismiss()
-                                }
-                                .onAppear {
-                                    // Announce toast appearance for VoiceOver users
-                                    #if canImport(UIKit)
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        let announcement = "\(currentToast.type.accessibilityLabel). \(currentToast.message)"
-                                        UIAccessibility.post(notification: .announcement, argument: announcement)
-                                    }
-                                    #endif
-                                }
-                        } else {
-                            // EmptyView ensures the ZStack exists even when no toast is shown,
-                            // preventing potential layout shifts when the toast appears/disappears.
-                            EmptyView()
+                // Only create the toast if there's one to show
+                Group {
+                    if let currentToast = toastManager.currentToast {
+                        // Use GeometryReader only to get safe area insets, not for positioning
+                        GeometryReader { geometry in
+                            Color.clear
+                                .overlay(
+                                    ToastView(toast: currentToast)
+                                        .transition(toastTransition(for: alignment))
+                                        .offset(
+                                            x: calculateHorizontalOffset(for: alignment),
+                                            y: calculateVerticalOffset(for: alignment, in: geometry.safeAreaInsets)
+                                        )
+                                        .zIndex(1)  // Ensure toast is on top
+                                        .id(currentToast.id)  // Use ID for explicit animation identity
+                                        .onTapGesture {  // Allow tapping to dismiss
+                                            toastManager.dismiss()
+                                        }
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel("Toast notification: \(currentToast.message)")
+                                        .accessibilityHint("Double tap to dismiss")
+                                        .accessibilityAction(named: "Dismiss") {
+                                            toastManager.dismiss()
+                                        }
+                                        .onAppear {
+                                            // Announce toast appearance for VoiceOver users
+                                            #if canImport(UIKit)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                let announcement = "\(currentToast.type.accessibilityLabel). \(currentToast.message)"
+                                                UIAccessibility.post(notification: .announcement, argument: announcement)
+                                            }
+                                            #endif
+                                        },
+                                    alignment: alignment
+                                )
                         }
+                        .allowsHitTesting(true)
                     }
                 }
-                // Apply animation to the overlay container for smooth appearance/disappearance
-                // Using the toast's ID as the value ensures animation triggers correctly even if
-                // message/type changes but the toast object itself remains (though current implementation replaces it).
                 .animation(configuration.showAnimation, value: toastManager.currentToast?.id)
             )
     }
 
     /// Determines the appropriate transition based on the alignment.
-    private func toastTransition(for alignment: Alignment) -> AnyTransition {
+    internal func toastTransition(for alignment: Alignment) -> AnyTransition {
         switch alignment {
         case .top, .topLeading, .topTrailing:
             return .move(edge: .top).combined(with: .opacity)
         case .bottom, .bottomLeading, .bottomTrailing:
             return .move(edge: .bottom).combined(with: .opacity)
-        default:  // Center, leading, trailing
+        case .leading, .leadingFirstTextBaseline, .leadingLastTextBaseline:
+            return .move(edge: .leading).combined(with: .opacity)
+        case .trailing, .trailingFirstTextBaseline, .trailingLastTextBaseline:
+            return .move(edge: .trailing).combined(with: .opacity)
+        default:  // Center and other alignments
             return .opacity.combined(with: .scale(scale: 0.9))
         }
     }
 
+    /// Calculates the horizontal offset for positioning.
+    internal func calculateHorizontalOffset(for alignment: Alignment) -> CGFloat {
+        // Most alignments don't need horizontal offset as they're handled by the overlay alignment
+        // Only add offsets if we need to fine-tune positioning
+        return 0
+    }
+
     /// Calculates the vertical offset to account for safe areas.
-    private func calculateOffset(for alignment: Alignment, in safeAreaInsets: EdgeInsets) -> CGFloat
-    {
+    internal func calculateVerticalOffset(for alignment: Alignment, in safeAreaInsets: EdgeInsets) -> CGFloat {
         switch alignment {
         case .top, .topLeading, .topTrailing:
-            // Add a small extra padding below the top safe area
+            // Add padding below the top safe area
             return safeAreaInsets.top + 8
         case .bottom, .bottomLeading, .bottomTrailing:
-            // Add a small extra padding above the bottom safe area
+            // Add padding above the bottom safe area
             return -safeAreaInsets.bottom - 8
         default:
-            return 0  // No offset needed for center alignments
+            // Center, leading, trailing don't need safe area adjustments
+            return 0
         }
     }
 }
