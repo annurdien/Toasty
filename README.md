@@ -42,6 +42,7 @@
 - ✅ Input validation for empty messages and invalid durations
 - 🎨 Customizable appearance through configuration
 - 🧪 Comprehensive test coverage
+- 📋 Queue system - stack toasts or replace them (configurable)
 
 ## 📦 Installation
 
@@ -178,6 +179,80 @@ var body: some View {
     }
 }
 ```
+
+#### Toast Queue System
+
+By default, new toasts replace currently shown ones. You can enable queue mode to stack multiple toasts:
+
+```swift
+// Enable queue mode - toasts will be shown one after another
+ContentView()
+    .toastable(alignment: .top, queueMode: .queue)
+
+// Default replace mode - new toasts replace current ones  
+ContentView()
+    .toastable(alignment: .top, queueMode: .replace)
+```
+
+**Queue Management:**
+```swift
+@Toast private var toast
+
+// Show multiple toasts - they'll queue up in queue mode
+toast.show(message: "First toast", type: .info)
+toast.show(message: "Second toast", type: .success) 
+toast.show(message: "Third toast", type: .warning)
+
+// Check queue status
+if toast.hasQueuedToasts {
+    print("There are \(toast.queueCount) toasts in queue")
+}
+
+// Dismiss current toast (next will show automatically in queue mode)
+toast.dismiss()
+
+// Clear entire queue and current toast
+toast.dismissAll()
+```
+
+**Example with Queue Controls:**
+```swift
+struct QueueExampleView: View {
+    @Toast private var toast
+    @State private var queueMode: ToastQueueMode = .replace
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Picker("Mode", selection: $queueMode) {
+                Text("Replace").tag(ToastQueueMode.replace)
+                Text("Queue").tag(ToastQueueMode.queue)
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            
+            Button("Show 3 Quick Toasts") {
+                toast.show(message: "First toast 🥇", type: .info)
+                toast.show(message: "Second toast 🥈", type: .success)
+                toast.show(message: "Third toast 🥉", type: .warning)
+            }
+            
+            if toast.hasQueuedToasts {
+                Text("Queue: \(toast.queueCount) toasts")
+                    .foregroundColor(.secondary)
+                
+                Button("Clear Queue") {
+                    toast.dismissAll()
+                }
+                .foregroundColor(.red)
+            }
+        }
+        .toastable(alignment: .top, queueMode: queueMode)
+    }
+}
+```
+
+**Queue Mode Guidelines:**
+- **Use `.replace` for**: Status updates, progress notifications, real-time data
+- **Use `.queue` for**: Multiple user actions, batch operations, step-by-step feedback
 
 #### Input Validation
 The library automatically validates inputs:

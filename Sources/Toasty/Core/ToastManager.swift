@@ -1,22 +1,38 @@
 import Combine
 import SwiftUI
 
+/// Configuration for toast queueing behavior
+public enum ToastQueueMode {
+    case replace  // Replace current toast with new one (default behavior)
+    case queue    // Queue toasts and show them sequentially
+}
+
 /// Manages the state and presentation of toast messages.
 @MainActor  // Ensure all updates happen on the main thread
 public class ToastManager: ObservableObject {
 
     /// The currently active toast data. nil means no toast is shown.
     @Published public private(set) var currentToast: ToastData? = nil
+    
+    /// The queue mode for handling multiple toasts
+    @Published public var queueMode: ToastQueueMode = .replace
 
     private var dismissalTask: Task<Void, Never>?  // Task to handle auto-dismissal
     private var currentToastId: UUID?  // Track the ID of the currently active toast
+    @Published public private(set) var toastQueue: [ToastData] = []  // Queue for pending toasts (now published for automatic updates)
+    
+    /// Current queue count (computed property to avoid unnecessary @Published updates)
+    public var queueCount: Int {
+        toastQueue.count
+    }
 
     // MARK: - Show Methods
 
     /// Shows a new toast message using a `ToastData` object.
     ///
-    /// If a toast is already being displayed, it will be replaced by the new one.
-    /// The dismissal timer for the previous toast (if any) will be cancelled.
+    /// Behavior depends on the queueMode:
+    /// - .replace: If a toast is already being displayed, it will be replaced by the new one
+    /// - .queue: If a toast is already being displayed, the new toast will be queued
     ///
     /// - Parameter toast: The `ToastData` object containing the details of the toast to show.
     public func show(toast: ToastData) {
@@ -29,6 +45,20 @@ public class ToastManager: ObservableObject {
             return  // Don't show toasts with invalid duration
         }
         
+        switch queueMode {
+        case .replace:
+            showImmediately(toast: toast)
+        case .queue:
+            // In queue mode, add to queue and show stacked
+            toastQueue.append(toast)
+            
+            // Set up auto-dismissal for this specific toast
+            setupAutoDismissal(for: toast)
+        }
+    }
+    
+    /// Shows a toast immediately, cancelling any current toast
+    private func showImmediately(toast: ToastData) {
         // Cancel any existing dismissal task before showing a new toast
         dismissalTask?.cancel()
         dismissalTask = nil
@@ -49,7 +79,24 @@ public class ToastManager: ObservableObject {
 
             // Only dismiss if this is still the same toast (prevents race conditions)
             if self.currentToastId == toastId {
-                self.dismiss()
+                self.dismissAndShowNext()
+            }
+        }
+    }
+    
+    /// Sets up auto-dismissal for a specific toast in queue mode
+    private func setupAutoDismissal(for toast: ToastData) {
+        let toastId = toast.id
+        Task {
+            // Wait for the specified duration
+            try? await Task.sleep(nanoseconds: UInt64(toast.duration * 1_000_000_000))
+            
+            // Check if the task was cancelled
+            guard !Task.isCancelled else { return }
+            
+            // Remove this specific toast from the queue
+            await MainActor.run {
+                self.toastQueue.removeAll { $0.id == toastId }
             }
         }
     }
@@ -69,17 +116,71 @@ public class ToastManager: ObservableObject {
         show(toast: toast)
     }
 
-    // MARK: - Dismiss Method
+    // MARK: - Dismiss Methods
 
     /// Dismisses the currently shown toast immediately.
     public func dismiss() {
+        dismissAndShowNext()
+    }
+    
+    /// Dismisses a specific toast from the queue
+    public func dismiss(toast: ToastData) {
+        // If it's the current toast, dismiss it normally
+        if currentToast?.id == toast.id {
+            dismiss()
+            return
+        }
+        
+        // Otherwise, remove it from the queue
+        toastQueue.removeAll { $0.id == toast.id }
+    }
+    
+    /// Internal method to dismiss current toast and show next in queue
+    private func dismissAndShowNext() {
         // Cancel the dismissal task if it's running
         dismissalTask?.cancel()
         dismissalTask = nil  // Clear the task reference
 
-        // Remove the current toast without animation (animation handled by modifier)
-        currentToast = nil
-        currentToastId = nil
+        if queueMode == .replace {
+            // In replace mode, clear current toast and show next from queue
+            currentToast = nil
+            currentToastId = nil
+            
+            // Show next toast in queue if available
+            if !toastQueue.isEmpty {
+                let nextToast = toastQueue.removeFirst()
+                
+                // Small delay to allow smooth transition
+                Task {
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                    showImmediately(toast: nextToast)
+                }
+            }
+        } else {
+            // In queue mode, just remove the first toast from the queue
+            // The stacked view will automatically update to show remaining toasts
+            if !toastQueue.isEmpty {
+                toastQueue.removeFirst()
+            }
+        }
+    }
+    
+    // MARK: - Queue Management
+    
+    /// Clears all queued toasts
+    public func clearQueue() {
+        toastQueue.removeAll()
+    }
+    
+    /// Returns the current queue as an array of ToastData
+    public var queue: [ToastData] {
+        toastQueue
+    }
+    
+    /// Dismisses current toast and clears the entire queue
+    public func dismissAll() {
+        clearQueue()
+        dismiss()
     }
     
     // MARK: - Lifecycle
@@ -93,6 +194,29 @@ public class ToastManager: ObservableObject {
     
     /// Returns true if a toast is currently being displayed
     public var isShowingToast: Bool {
-        currentToast != nil
+        if queueMode == .queue {
+            return !toastQueue.isEmpty
+        } else {
+            return currentToast != nil
+        }
+    }
+    
+    /// Returns true if there are toasts in the queue
+    public var hasQueuedToasts: Bool {
+        !toastQueue.isEmpty
+    }
+    
+    // MARK: - Convenience Methods
+    
+    /// Enable toast queueing (toasts will be shown sequentially)
+    public func enableQueueing() {
+        queueMode = .queue
+    }
+    
+    /// Disable toast queueing (new toasts will replace current toast)
+    public func disableQueueing() {
+        queueMode = .replace
+        // Optionally clear queue when switching to replace mode
+        clearQueue()
     }
 }

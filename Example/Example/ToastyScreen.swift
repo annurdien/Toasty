@@ -11,12 +11,46 @@ import SwiftUI
 struct ToastyScreen: View {
   @Toast private var toast
   @Binding var toastAlignment: Alignment
+  @State private var queueMode: ToastQueueMode = .replace
   
   var body: some View {
     VStack(spacing: 20) {
       Text("Toasty Demo")
         .font(.title2)
         .fontWeight(.bold)
+      
+      // Queue Mode Toggle
+      VStack(spacing: 10) {
+        Text("Queue Mode")
+          .font(.headline)
+        
+        Picker("Queue Mode", selection: $queueMode) {
+          Text("Replace").tag(ToastQueueMode.replace)
+          Text("Stack").tag(ToastQueueMode.queue)
+        }
+        .pickerStyle(.segmented)
+        
+        if queueMode == .queue {
+          HStack {
+            Text("Queued: \(toast.queueCount)")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            if toast.hasQueuedToasts {
+              Button("Clear Queue") {
+                toast.clearQueue()
+              }
+              .font(.caption)
+              .foregroundColor(.red)
+            }
+          }
+        }
+      }
+      .padding()
+      .background(Color.gray.opacity(0.1))
+      .cornerRadius(10)
       
       // Alignment Picker
       VStack(spacing: 10) {
@@ -48,37 +82,63 @@ struct ToastyScreen: View {
           .font(.subheadline)
           .foregroundColor(.secondary)
         
-        Button("Show Info Toast") {
-          toast.show(message: "This is an informational message!", type: .info, duration: 3.0)
+        // Quick sequence button for testing queue
+        if queueMode == .queue {
+          Button("Show 3 Quick Toasts") {
+            toast.show(message: "First toast 🥇", type: .info, duration: 2.0)
+            toast.show(message: "Second toast 🥈", type: .success, duration: 2.0)
+            toast.show(message: "Third toast 🥉", type: .warning, duration: 2.0)
+          }
+          .buttonStyle(.borderedProminent)
+          .foregroundColor(.white)
+          .background(Color.purple)
         }
-        .buttonStyle(.borderedProminent)
         
-        Button("Show Success Toast") {
-          toast.show(message: "Operation completed successfully! ✅", type: .success, duration: 4.0)
+        HStack(spacing: 10) {
+          Button("Info") {
+            toast.show(message: "This is an informational message!", type: .info, duration: 3.0)
+          }
+          .buttonStyle(.borderedProminent)
+          
+          Button("Success") {
+            toast.show(message: "Operation completed successfully! ✅", type: .success, duration: 4.0)
+          }
+          .buttonStyle(.borderedProminent)
         }
-        .buttonStyle(.borderedProminent)
         
-        Button("Show Warning Toast") {
-          toast.show(message: "Please check your input before proceeding.", type: .warning, duration: 3.5)
+        HStack(spacing: 10) {
+          Button("Warning") {
+            toast.show(message: "Please check your input before proceeding.", type: .warning, duration: 3.5)
+          }
+          .buttonStyle(.borderedProminent)
+          
+          Button("Error") {
+            toast.show(message: "Something went wrong. Please try again.", type: .error, duration: 5.0)
+          }
+          .buttonStyle(.borderedProminent)
         }
-        .buttonStyle(.borderedProminent)
-        
-        Button("Show Error Toast") {
-          toast.show(message: "Something went wrong. Please try again.", type: .error, duration: 5.0)
-        }
-        .buttonStyle(.borderedProminent)
         
         Button("Show Long Message") {
           toast.show(message: "This is a very long message that demonstrates how the toast handles multiple lines of text gracefully.", type: .info, duration: 4.0)
         }
         .buttonStyle(.bordered)
         
-        if toast.isShowingToast {
-          Button("Dismiss Current Toast") {
-            toast.dismiss()
+        HStack(spacing: 10) {
+          if toast.isShowingToast {
+            Button("Dismiss Current") {
+              toast.dismiss()
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.red)
           }
-          .buttonStyle(.bordered)
-          .foregroundColor(.red)
+          
+          if toast.hasQueuedToasts {
+            Button("Dismiss All") {
+              toast.dismissAll()
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.red)
+          }
         }
       }
       
@@ -91,6 +151,14 @@ struct ToastyScreen: View {
     .padding()
     .navigationTitle("Toast Demo")
     .navigationBarTitleDisplayMode(.inline)
+    .onAppear {
+      // Sync the toast manager's queue mode with our local state
+      toast.queueMode = queueMode
+    }
+    .onChange(of: queueMode) { _, newMode in
+      // Update the toast manager when picker changes
+      toast.queueMode = newMode
+    }
   }
   
   private func alignmentButton(_ alignment: Alignment, _ title: String) -> some View {

@@ -20,6 +20,25 @@ extension View {
     ) -> some View {
         modifier(ToastableViewModifier(alignment: alignment, providedManager: manager))
     }
+    
+    /// Makes the view capable of presenting toasts with queue mode configuration.
+    ///
+    /// - Parameters:
+    ///   - alignment: The alignment guiding the toast's position (default is `.top`).
+    ///   - queueMode: The queue mode for handling multiple toasts (default is `.replace`).
+    ///   - manager: An optional, existing `ToastManager` instance.
+    /// - Returns: A view modified to present toasts with the specified queue mode.
+    public func toastable(
+        alignment: Alignment = .top,
+        queueMode: ToastQueueMode = .replace,
+        manager: ToastManager? = nil
+    ) -> some View {
+        modifier(ToastableViewModifier(
+            alignment: alignment,
+            providedManager: manager,
+            queueMode: queueMode
+        ))
+    }
 }
 
 // Internal modifier to handle manager creation or injection
@@ -31,11 +50,14 @@ private struct ToastableViewModifier: ViewModifier {
     let alignment: Alignment
     /// An optional externally provided manager.
     let providedManager: ToastManager?
+    /// The queue mode for handling multiple toasts.
+    let queueMode: ToastQueueMode
 
     /// Initializes the modifier, storing the alignment and any provided manager.
-    init(alignment: Alignment, providedManager: ToastManager?) {
+    init(alignment: Alignment, providedManager: ToastManager?, queueMode: ToastQueueMode = .replace) {
         self.alignment = alignment
         self.providedManager = providedManager
+        self.queueMode = queueMode
         // Note: We no longer initialize managerToUse here to avoid initialization order issues.
     }
 
@@ -50,5 +72,9 @@ private struct ToastableViewModifier: ViewModifier {
             .modifier(ToastPresenterModifier(toastManager: actualManager, alignment: alignment))
             // Inject the determined manager into the environment for child views.
             .environmentObject(actualManager)
+            // Configure the queue mode only once when the view appears
+            .onAppear {
+                actualManager.queueMode = queueMode
+            }
     }
 }
