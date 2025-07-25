@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 /// A view modifier that observes a `ToastManager` and presents a `ToastView`
 /// when a toast is available.
 internal struct ToastPresenterModifier: ViewModifier {
@@ -7,6 +11,7 @@ internal struct ToastPresenterModifier: ViewModifier {
     /// If the modifier *creates* the object, use @StateObject.
     /// Here, the object is created by the .toastable() extension and passed in.
     @ObservedObject var toastManager: ToastManager
+    @Environment(\.toastConfiguration) private var configuration
     let alignment: Alignment  // Where the toast should appear
 
     init(toastManager: ToastManager, alignment: Alignment = .top) {
@@ -34,8 +39,21 @@ internal struct ToastPresenterModifier: ViewModifier {
                                     // Ensure dismissal happens on the main thread via the manager's method
                                     toastManager.dismiss()
                                 }
-                                .accessibilityLabel("Toast message: \(currentToast.message)")  // Accessibility
-                                .accessibilityHint("Tap to dismiss")
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Toast notification: \(currentToast.message)")
+                                .accessibilityHint("Double tap to dismiss")
+                                .accessibilityAction(named: "Dismiss") {
+                                    toastManager.dismiss()
+                                }
+                                .onAppear {
+                                    // Announce toast appearance for VoiceOver users
+                                    #if canImport(UIKit)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        let announcement = "\(currentToast.type.accessibilityLabel). \(currentToast.message)"
+                                        UIAccessibility.post(notification: .announcement, argument: announcement)
+                                    }
+                                    #endif
+                                }
                         } else {
                             // EmptyView ensures the ZStack exists even when no toast is shown,
                             // preventing potential layout shifts when the toast appears/disappears.
@@ -46,9 +64,7 @@ internal struct ToastPresenterModifier: ViewModifier {
                 // Apply animation to the overlay container for smooth appearance/disappearance
                 // Using the toast's ID as the value ensures animation triggers correctly even if
                 // message/type changes but the toast object itself remains (though current implementation replaces it).
-                .animation(
-                    .spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0),
-                    value: toastManager.currentToast?.id)
+                .animation(configuration.showAnimation, value: toastManager.currentToast?.id)
             )
     }
 
