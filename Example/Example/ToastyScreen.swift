@@ -2,8 +2,6 @@
 //  ToastyScreen.swift
 //  Example
 //
-//  Created by Annurdien Rasyid on 22/04/25.
-//
 
 import Toasty
 import SwiftUI
@@ -52,7 +50,6 @@ struct ToastyScreen: View {
       .background(Color.gray.opacity(0.1))
       .cornerRadius(10)
       
-      // Alignment Picker
       VStack(spacing: 10) {
         Text("Toast Position")
           .font(.headline)
@@ -82,7 +79,6 @@ struct ToastyScreen: View {
           .font(.subheadline)
           .foregroundColor(.secondary)
         
-        // Quick sequence button for testing queue
         if queueMode == .queue {
           Button("Show 3 Quick Toasts") {
             toast.show(message: "First toast 🥇", type: .info, duration: 2.0)
@@ -152,11 +148,9 @@ struct ToastyScreen: View {
     .navigationTitle("Toast Demo")
     .navigationBarTitleDisplayMode(.inline)
     .onAppear {
-      // Sync the toast manager's queue mode with our local state
       toast.queueMode = queueMode
     }
     .onChange(of: queueMode) { _, newMode in
-      // Update the toast manager when picker changes
       toast.queueMode = newMode
     }
   }

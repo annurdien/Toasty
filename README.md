@@ -25,7 +25,8 @@
 </p>
 
 <p align="center">
-    <img src="docs/toasty-demo.gif" alt="Toasty Demo" height="500">
+    <img src="docs/replacing.gif" alt="Replacing Demo" height="500">
+    <img src="docs/stacked.gif" alt="Stacked Demo" height="500">
 </p>
 
 ## ✨ Features
