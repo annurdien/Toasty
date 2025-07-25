@@ -111,6 +111,110 @@ struct ToastyTests {
         #expect(firstToastId != secondToastId)
     }
     
+    @Test func toastManagerQueueMode() async throws {
+        let manager = ToastManager()
+        manager.queueMode = .queue
+        
+        // Initial state
+        #expect(manager.queueCount == 0)
+        #expect(manager.hasQueuedToasts == false)
+        #expect(manager.isShowingToast == false)
+        
+        // Show first toast - in stacked mode, goes directly to queue
+        manager.show(message: "First", type: .info)
+        #expect(manager.currentToast == nil) // No current toast in stacked mode
+        #expect(manager.queueCount == 1)
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true) // Should show stacked toasts
+        
+        // Show second toast - should be added to queue
+        manager.show(message: "Second", type: .success)
+        #expect(manager.queueCount == 2)
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true)
+        
+        // Show third toast - should also be added to queue
+        manager.show(message: "Third", type: .warning)
+        #expect(manager.queueCount == 3)
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true)
+        
+        // Dismiss first toast from stack
+        manager.dismiss()
+        #expect(manager.queueCount == 2) // Queue should be reduced
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true)
+        
+        // Dismiss again
+        manager.dismiss()
+        #expect(manager.queueCount == 1)
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true)
+        
+        // Final dismiss
+        manager.dismiss()
+        #expect(manager.queueCount == 0)
+        #expect(manager.hasQueuedToasts == false)
+        #expect(manager.isShowingToast == false)
+    }
+    
+    @Test func toastManagerReplaceMode() async throws {
+        let manager = ToastManager()
+        manager.queueMode = .replace
+        
+        // Show first toast
+        manager.show(message: "First", type: .info)
+        #expect(manager.currentToast?.message == "First")
+        #expect(manager.queueCount == 0)
+        
+        // Show second toast - should replace first
+        manager.show(message: "Second", type: .success)
+        #expect(manager.currentToast?.message == "Second")
+        #expect(manager.queueCount == 0)
+        #expect(manager.hasQueuedToasts == false)
+    }
+    
+    @Test func toastManagerClearQueue() async throws {
+        let manager = ToastManager()
+        manager.queueMode = .queue
+        
+        // Add multiple toasts - in stacked mode, all go to queue
+        manager.show(message: "First", type: .info)
+        manager.show(message: "Second", type: .success)
+        manager.show(message: "Third", type: .warning)
+        
+        #expect(manager.queueCount == 3)
+        #expect(manager.hasQueuedToasts == true)
+        #expect(manager.isShowingToast == true)
+        
+        // Clear queue
+        manager.clearQueue()
+        #expect(manager.queueCount == 0)
+        #expect(manager.hasQueuedToasts == false)
+        #expect(manager.isShowingToast == false) // No toasts showing in stacked mode
+    }
+    
+    @Test func toastManagerDismissAll() async throws {
+        let manager = ToastManager()
+        manager.queueMode = .queue
+        
+        // Add multiple toasts - in stacked mode, all go to queue
+        manager.show(message: "First", type: .info)
+        manager.show(message: "Second", type: .success)
+        manager.show(message: "Third", type: .warning)
+        
+        #expect(manager.isShowingToast == true)
+        #expect(manager.queueCount == 3)
+        #expect(manager.hasQueuedToasts == true)
+        
+        // Dismiss all
+        manager.dismissAll()
+        #expect(manager.isShowingToast == false)
+        #expect(manager.currentToast == nil)
+        #expect(manager.queueCount == 0)
+        #expect(manager.hasQueuedToasts == false)
+    }
+    
     @Test func toastPresenterModifierAlignment() async throws {
         // Test that all alignment cases are handled without crashing
         let alignments: [Alignment] = [
