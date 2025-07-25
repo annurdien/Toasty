@@ -37,7 +37,7 @@
 - 👆 Tap to dismiss
 - ♿️ Enhanced accessibility support with VoiceOver announcements
 - 📱 Safe area aware
-- 🎭 Flexible positioning (top, bottom)
+- 🎭 Flexible positioning (top, bottom, center, leading, trailing with variants)
 - 🛡️ Race condition protection for rapid toast calls
 - ✅ Input validation for empty messages and invalid durations
 - 🎨 Customizable appearance through configuration
@@ -120,8 +120,23 @@ struct ContentView: View {
 Adjust toast position using the alignment parameter:
 
 ```swift
+// Basic positions
 ContentView()
-    .toastable(alignment: .bottom) // Show toasts at the bottom
+    .toastable(alignment: .top)    // Top center
+    .toastable(alignment: .bottom) // Bottom center
+    .toastable(alignment: .center) // Screen center
+
+// Corner positions  
+ContentView()
+    .toastable(alignment: .topLeading)    // Top left
+    .toastable(alignment: .topTrailing)   // Top right
+    .toastable(alignment: .bottomLeading) // Bottom left
+    .toastable(alignment: .bottomTrailing)// Bottom right
+
+// Side positions
+ContentView()
+    .toastable(alignment: .leading)  // Left center
+    .toastable(alignment: .trailing) // Right center
 ```
 
 #### Appearance

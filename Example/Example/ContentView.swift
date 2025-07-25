@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var toastAlignment: Alignment = .top
+    
     var body: some View {
       NavigationStack {
-        ToastyScreen()
+        ToastyScreen(toastAlignment: $toastAlignment)
       }
-      .toastable(alignment: .top)
+      .toastable(alignment: toastAlignment)
     }
 }
 
